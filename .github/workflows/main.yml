@@ -1,43 +1,28 @@
----
-name: CI
+name: docs_pages_workflow
+ 
+# execute this workflow automatically when a we push to master
 on:
   push:
-
-
+ 
 jobs:
-
-  build_docs:
-    name: "Python ${{ matrix.python-version }}"
-    strategy:
-      matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.7"]
-    runs-on: ${{ matrix.os }}
-    env:
-      DEPLOY_DOCS: '3.7'
-      
+ 
+  build_docs_job:
+    runs-on: ubuntu-latest
+    container: debian:buster-slim
+ 
     steps:
-      - uses: "actions/checkout@v2"
-      - uses: "actions/setup-python@v1"
-        with:
-          python-version: "${{ matrix.python-version }}"
-
-      - name: "Install dependencies"
-        run: |
-          set -xe
-          python -VV
-          python -m site
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade codecov virtualenv tox tox-gh-actions
-      - name: "Run tox targets for ${{ matrix.python-version }}"
-        run: "python -m tox"
-
-      - name: Deploy
-        if: "contains(env.DEPLOY_DOCS, matrix.python-version)"
-        uses: crazy-max/ghaction-github-pages@v1
-        with:
-          keep_history: true
-          target_branch: gh-pages
-          build_dir: docs/_build/html/
-        env:
-          GITHUB_PAT: ${{ secrets.TEST }}
+ 
+    - name: Prereqs
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        apt-get update
+        apt-get install -y git
+        git clone "https://token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
+      shell: bash
+ 
+    - name: Execute script to build our documentation and update pages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: "docs/buildDocs.sh"
+      shell: bash
